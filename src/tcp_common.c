@@ -11,6 +11,7 @@
 
 struct tcp_socket_data {
     int fd;
+    int cli_fd;
     int port;
     char server_ip[IP_LEN];
 
@@ -73,9 +74,43 @@ int tcp_listen_socket(struct tcp_socket_data *socket)
     return 0;
 }
 
+int tcp_accept_socket(struct tcp_socket_data *socket)
+{
+    int fd = socket->fd;
+    struct sockaddr *cliaddr = socket->cli;
+    int connect_fd = -1;
+
+    connect_fd = accept(fd, (SA *)cliaddr, sizeof(SA));
+
+    return connect_fd;
+}
+
 int tcp_close_socket(int fd)
 {
     close(fd);
 
     return 0;
 }
+
+int tcp_connect_socket(struct tcp_socket_data *socket);
+{
+    struct sockaddr_in *cliaddr = socket->cli;
+    const char* server_ip = socket->server_ip;
+    int port = socket->port;
+
+    bzero(cliaddr,sizeof(struct sockaddr_in));
+    cliaddr->sin_family = AF_INET;
+
+    (cliaddr->sin_addr).s_addr = inet_addr(server_ip);
+    (cliaddr->sin_addr).sin_port = htons(port);
+
+    int ret = connect(clifd, (SA *)cliaddr, sizeof(struct sockaddr_in));
+    if (ret < 0) {
+        prt_log("cli connect server fail");
+        return -1;
+    }
+
+    return 0;
+}
+
+static 
