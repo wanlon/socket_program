@@ -32,9 +32,24 @@ int tcp_create_socket(struct tcp_socket_data *socket)
 
     return 0;
 }
-
-int tcp_set_socketflag()
+/* ——————————————————————————————————————————————————————————————————————————————————————
+ * level	|	option_name	|	data type	|	note		
+ * SOL_SOCKET   |	SO_DEBUG	|	int		|	打开调试信息	
+ * 			SO_REUSEADDR    |       int		|	使用本地地址	
+ * 			SO_TYPE		|	int		|	获取socket类型	
+ * 			SO_ERROR	|	int		|	获取并清除socket错误状态
+ * 			SO_DONTROUTE	|	int		|	不查看路由表，直接将数据发送给
+ * 									本地局域网内的主机。含义和send
+ * 									系统调用的MSG_DONTROUTE标志类似
+ * 			SO_RCVBUF	|	int		|	TCP接收缓冲区大小
+ * 			SO_SNDBUF	|	int		|	TCP发送缓冲区大小
+ * 			SO_KEEPALIVE	|	int		|	发送周期性保活报文以维持连接
+ * 
+ *
+ */
+int tcp_set_socketflag(int fd, int level, int option_name, void* option_value, socklen_t option_len)
 {
+
     return 0;
 }
 
