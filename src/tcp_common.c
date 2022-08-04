@@ -32,7 +32,8 @@ int tcp_create_socket(struct tcp_socket_data *socket)
 
     return 0;
 }
-/* ——————————————————————————————————————————————————————————————————————————————————————
+
+/* ——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
  * level	|	option_name	|	data type	|	note		
  * SOL_SOCKET   |	SO_DEBUG	|	int		|	打开调试信息	
  * 			SO_REUSEADDR    |       int		|	使用本地地址	
@@ -44,7 +45,21 @@ int tcp_create_socket(struct tcp_socket_data *socket)
  * 			SO_RCVBUF	|	int		|	TCP接收缓冲区大小
  * 			SO_SNDBUF	|	int		|	TCP发送缓冲区大小
  * 			SO_KEEPALIVE	|	int		|	发送周期性保活报文以维持连接
- * 
+ * 			SO_OOBINLIINE	|	int		|	接收到的带外数据将存留在普通数据的输入队列中。
+ * 									此时我们不能使用带MSG_OOB标志的读操作来读取
+ * 									带外数据
+ * 			SO_LINGER	|	int		|	若有数据待发送，则延迟关闭
+ * 			SO_RCVLOWAT	|	int		|	TCP接收缓存区域水位标记
+ * 			SO_SNDLOWAT	|	int		|	TCP发送缓存区域水位标记
+ * 			SO_RCVTIMEO	|	timeval		|	接收数据超时
+ * 			SO_SNDTIMEO	|	timeval		|	发送数据超时
+ * _____________________________________________________________________________________________________________________
+ * IPPROTO_IP	|	IP_TOS		|	int		|	服务类型
+ * 			IP_TTL		|	int		|	存活时间
+ * —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+ * IPPROTO_TCP	|	TCP_MAXSEG	|	int		|	TCP最大报文段大小
+ * 			TCP_NODELAY	|	int		|	禁止Nagle算法
+ * _____________________________________________________________________________________________________________________
  *
  */
 int tcp_set_socketflag(int fd, int level, int option_name, void* option_value, socklen_t option_len)
