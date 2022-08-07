@@ -1,34 +1,19 @@
 #include <stdio.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
+#include "proto_common.h"
 
-#define IP_LEN   20
-#define SA struct sockaddr
+#define SA struct sockaddr_in
 
-struct tcp_socket_data {
-    int fd;
-    int cli_fd;
-    int port;
-    char server_ip[IP_LEN];
-
-    struct sockaddr_in servaddr, cli;
-
-    unsigned char backlog;
-}
-
-int tcp_create_socket(struct tcp_socket_data *socket)
+static int tcp_create_socket(struct socket_data *socket_d)
 {
-    int fd = socket->fd;
+    int fd = socket_d->fd;
 
     fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1) {
         prt_log("creat tcp sock error!!!");
         return -1;
     }
+
+    socket_d->fd = fd;
 
     return 0;
 }
@@ -62,25 +47,24 @@ int tcp_create_socket(struct tcp_socket_data *socket)
  * _____________________________________________________________________________________________________________________
  *
  */
-int tcp_set_socketflag(int fd, int level, int option_name, void* option_value, socklen_t option_len)
+static int tcp_set_socketflag(int fd, int level, int option_name, void* option_value, socklen_t option_len)
 {
 
     return 0;
 }
 
-int tcp_bind_socket(struct tcp_socket_data *socket)
+static int tcp_bind_socket(struct socket_data *socket_d)
 {
-    int fd = socket->fd;
-    int port = socket->port;
-    struct sockaddr_in *servaddr = socket->servaddr;
+    int fd = socket_d->fd;
+    int port = socket_d->port;
+    struct sockaddr_in *servaddr = &socket_d->servaddr;
 
-    bzero(servaddr, sizeof(sockaddr_in));
+    bzero(servaddr, sizeof(SA));
 
     servaddr->sin_family = AF_INET;
     (servaddr->sin_addr).s_addr = htonl(INADDR_ANY);
     servaddr->sin_port = htons(port);
-
-    if ((bind(fd, (SA*)servaddr, sizeof(struct sockaddr_in))) != 0) {
+    if ((bind(fd, servaddr, sizeof(SA))) < 0) {
         prt_log("tcp bind socket fail");
         return -1;
     }
@@ -88,15 +72,15 @@ int tcp_bind_socket(struct tcp_socket_data *socket)
     return 0;
 }
 
-int tcp_listen_socket(struct tcp_socket_data *socket)
+static int tcp_listen_socket(struct socket_data *socket_d)
 {
-    int fd = socket->fd;
-    unsigned char backlog = socket->backlog;
+    int fd = socket_d->fd;
+    unsigned char backlog = socket_d->backlog;
 
     /*
      * the value of backlog should be less than 30
      */
-    if ((listen(sockfd, backlog)) != 0) {
+    if ((listen(fd, backlog)) != 0) {
         prt_log("tcp listen socket fail");
         return -1;
     }
@@ -104,37 +88,37 @@ int tcp_listen_socket(struct tcp_socket_data *socket)
     return 0;
 }
 
-int tcp_accept_socket(struct tcp_socket_data *socket)
+static int tcp_accept_socket(struct socket_data *socket_d)
 {
-    int fd = socket->fd;
-    struct sockaddr *cliaddr = socket->cli;
+    int fd = socket_d->fd;
+    struct sockaddr *cliaddr = &socket_d->cli;
     int connect_fd = -1;
+    int len = sizeof(SA);
 
-    connect_fd = accept(fd, (SA *)cliaddr, sizeof(SA));
+    connect_fd = accept(fd, (struct sockaddr*)cliaddr, &len);
 
     return connect_fd;
 }
 
-int tcp_close_socket(int fd)
+static int tcp_close_socket(int fd)
 {
     close(fd);
 
     return 0;
 }
 
-int tcp_connect_socket(struct tcp_socket_data *socket);
+static int tcp_connect_socket(struct socket_data *socket_d)
 {
-    struct sockaddr_in *cliaddr = socket->cli;
-    const char* server_ip = socket->server_ip;
-    int port = socket->port;
+    struct sockaddr_in *cliaddr = &socket_d->cli;
+    const char* server_ip = socket_d->server_ip;
+    int port = socket_d->port;
 
     bzero(cliaddr,sizeof(struct sockaddr_in));
     cliaddr->sin_family = AF_INET;
 
     (cliaddr->sin_addr).s_addr = inet_addr(server_ip);
-    (cliaddr->sin_addr).sin_port = htons(port);
-
-    int ret = connect(clifd, (SA *)cliaddr, sizeof(struct sockaddr_in));
+    cliaddr->sin_port = htons(port);
+    int ret = connect(socket_d->cli_fd, (SA *)cliaddr, sizeof(SA));
     if (ret < 0) {
         prt_log("cli connect server fail");
         return -1;
@@ -143,4 +127,14 @@ int tcp_connect_socket(struct tcp_socket_data *socket);
     return 0;
 }
 
-static 
+const struct proto_socket_ops tcp_socket_ops =
+{
+	.name   = "tcp",
+	.create = tcp_create_socket,
+	.set_socket_opt = tcp_set_socketflag,
+	.bind = tcp_bind_socket,
+	.listen = tcp_listen_socket,
+	.accept = tcp_accept_socket,
+	.close = tcp_close_socket,
+	.connect = tcp_connect_socket
+};
