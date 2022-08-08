@@ -16,7 +16,6 @@ int main()
     }
 
     if(ops == NULL) {
-        printf("===sdsd===\n");
 	return -1;
     }
 
@@ -42,11 +41,13 @@ int main()
      */
 
     fd_set rfds;
+    fd_set rfds_tmp;
     struct timeval tv;
     int maxfd = tcp_socket_data.fd;
 
     FD_ZERO(&rfds);
     FD_SET(tcp_socket_data.fd, &rfds);
+    FD_ZERO(&rfds_tmp);
 
 
     while (1) {
@@ -56,17 +57,19 @@ int main()
 
         tv.tv_sec=2;
         tv.tv_usec=0;
-	FD_ZERO(&rfds);
-        FD_SET(tcp_socket_data.fd, &rfds);
 
-        int ret = select(maxfd+1, &rfds, NULL, NULL, &tv);
+	rfds_tmp = rfds;
+	//FD_ZERO(&rfds);
+        //FD_SET(tcp_socket_data.fd, &rfds);
+        //select每次返回后，会将没有就绪的文件描述符擦出，因此需要重新重置这个集合，即用rfds保存，tmp临使用
+        int ret = select(maxfd+1, &rfds_tmp, NULL, NULL, &tv);
 	if (ret < 0) {
             printf("select error\n");
         } else if (!ret) {
             printf("no data recive!!!\n");
         } else {
             for (int i=0; i<maxfd+1; i++) {
-                if (FD_ISSET(i, &rfds)) {
+                if (FD_ISSET(i, &rfds_tmp)) {
                     if (i == tcp_socket_data.fd) {
                         if ((confd = ops->accept(&tcp_socket_data)) < 0) {
                             printf("accept error\n");
