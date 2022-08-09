@@ -3,11 +3,11 @@
 
 #define SA struct sockaddr_in
 
-static int tcp_create_socket(struct socket_data *socket_d)
+static int udp_create_socket(struct socket_data *socket_d)
 {
     int fd = socket_d->fd;
 
-    fd = socket(AF_INET, SOCK_STREAM, 0);
+    fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (fd == -1) {
         prt_log("creat tcp sock error!!!");
         return -1;
@@ -47,7 +47,7 @@ static int tcp_create_socket(struct socket_data *socket_d)
  * _____________________________________________________________________________________________________________________
  *
  */
-static int tcp_set_socketflag(int fd, int level, int option_name, void* option_value, socklen_t option_len)
+static int udp_set_socketflag(int fd, int level, int option_name, void* option_value, socklen_t option_len)
 {
     int ret = setsockopt(fd, level, option_name, option_value, option_len);
     if (ret == -1) {
@@ -57,7 +57,7 @@ static int tcp_set_socketflag(int fd, int level, int option_name, void* option_v
     return 0;
 }
 
-static int tcp_bind_socket(struct socket_data *socket_d)
+static int udp_bind_socket(struct socket_data *socket_d)
 {
     int fd = socket_d->fd;
     int port = socket_d->port;
@@ -76,42 +76,14 @@ static int tcp_bind_socket(struct socket_data *socket_d)
     return 0;
 }
 
-static int tcp_listen_socket(struct socket_data *socket_d)
-{
-    int fd = socket_d->fd;
-    unsigned char backlog = socket_d->backlog;
-
-    /*
-     * the value of backlog should be less than 30
-     */
-    if ((listen(fd, backlog)) != 0) {
-        prt_log("tcp listen socket fail");
-        return -1;
-    }
-
-    return 0;
-}
-
-static int tcp_accept_socket(struct socket_data *socket_d)
-{
-    int fd = socket_d->fd;
-    struct sockaddr *cliaddr = &socket_d->cli;
-    int connect_fd = -1;
-    int len = sizeof(SA);
-
-    connect_fd = accept(fd, (struct sockaddr*)cliaddr, &len);
-
-    return connect_fd;
-}
-
-static int tcp_close_socket(int fd)
+static int udp_close_socket(int fd)
 {
     close(fd);
 
     return 0;
 }
 
-static int tcp_connect_socket(struct socket_data *socket_d)
+static int udp_connect_socket(struct socket_data *socket_d)
 {
     struct sockaddr_in *cliaddr = &socket_d->cli;
     const char* server_ip = socket_d->server_ip;
@@ -131,14 +103,12 @@ static int tcp_connect_socket(struct socket_data *socket_d)
     return 0;
 }
 
-const struct proto_socket_ops tcp_socket_ops =
+const struct proto_socket_ops udp_socket_ops =
 {
-	.name   = "tcp",
-	.create = tcp_create_socket,
-	.set_socket_opt = tcp_set_socketflag,
-	.bind = tcp_bind_socket,
-	.listen = tcp_listen_socket,
-	.accept = tcp_accept_socket,
-	.close = tcp_close_socket,
-	.connect = tcp_connect_socket
+	.name   = "udp",
+	.create = udp_create_socket,
+	.set_socket_opt = udp_set_socketflag,
+	.bind = udp_bind_socket,
+	.close = udp_close_socket,
+	.connect = udp_connect_socket
 };
